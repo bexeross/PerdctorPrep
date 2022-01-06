@@ -1,0 +1,123 @@
+---
+title: "Oceanography - netcdf2raster - R Notebook"
+output: html_notebook 
+---
+
+Data obtained in netcdf format needs to be converted to raster for our workflows. Currently this script is customised to work with Robinson's oceanography data, but will be customisable for other data.
+
+```{r}
+library(raster)
+library(ncdf4)
+library(rasterize)
+library(rgdal)
+```
+# get netcdf dimensions
+```{r}
+filename <- "F:/Data/Oceanography/Robinsons Model/bottom_1_NEST_1m_20130101_20131231_grid_T.nc"
+nc.data <- nc_open(filename)
+nc.data # gives the metadata - use to find variable names
+
+lon <- ncvar_get(nc.data, "nav_lon", verbose = F)
+lat <- ncvar_get(nc.data, "nav_lat", verbose = F)
+t <- ncvar_get(nc.data, "time_counter", verbose = F)
+
+lon[lon == -1] <- NA
+lat[lat == -1] <- NA
+
+```
+
+
+
+
+# Load netcdf variable data
+
+```{r}
+
+vname <- "thetao"
+
+## This code gives only a stack of images with dimension 0 to x/y so doesn't have lat/lon/crs associated. This is fine if lat/lon is simple enough (rectangular) to be used to define the bounding box (needs extra line of code to add this), but if it is not simple (e.g. robinsons data has a complex grid of differing resolution) then use the method that is not commented out.
+# nc.st <- stack(filename, varname = vname)
+# 
+# names(nc.st)<-c("Robinson_T_01_2013","Robinson_T_02_2013","Robinson_T_03_2013","Robinson_T_04_2013","Robinson_T_05_2013","Robinson_T_06_2013","Robinson_T_07_2013","Robinson_T_08_2013","Robinson_T_09_2013","Robinson_T_10_2013","Robinson_T_11_2013","Robinson_T_12_2013")
+# #plot(nc.st[[1]])
+# dim(nc.st)
+
+var.nc <- ncvar_get(nc.data, vname, start=c(1,1,1), count=c(995,845,1))
+```
+
+# convert to data.frame and spatial points
+
+```{r}
+var.df<-data.frame(long=as.vector(lon),lat=as.vector(lat), var=as.vector(var.nc))
+var.df<-na.omit(var.df)
+# try giving it a projection so that the projection can be changed
+# sp.var<-SpatialPointsDataFrame(coords=c(var.df[,c("long","lat")]),
+#                                proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"),
+#                                data = var.df)
+# #transform to polar stereographic projection (seems like right track but gives blank raster at the moment...)
+# sp.var.polar<-spTransform(sp.var, CRS("+init=epsg:3995"))
+# plot(sp.var.polar)
+```
+
+# convert to raster
+```{r}
+ras.obj<-raster(xmn=min(var.df$lon),
+                xmx=max(var.df$lon),
+                ymn=min(var.df$lat),
+                ymx=max(var.df$lat),
+                ncols=995,
+                nrows=845)
+
+# ras.obj<-raster(xmn=min(sp.var.polar@coords[,1]),
+#                 xmx=max(sp.var.polar@coords[,1]),
+#                 ymn=min(sp.var.polar@coords[,2]),
+#                 ymx=max(sp.var.polar@coords[,2]),
+#                 ncols=995,
+#                 nrows=845)
+              
+                #resolution=0.0333)
+
+#ext.polar<-extent(sp.var.polar)
+
+
+# ras.out<- rasterize(x=ext.polar, # lon-lat data/spatial points object
+#                     y=ras.obj, # raster object
+#                     field=sp.var.polar$var, # vals to fill raster with
+#                     fun=mean) # aggregate function
+
+ras.out<- rasterize(x=var.df[,1:2], # lon-lat data/spatial points object
+                    y=ras.obj, # raster object
+                    field=var.df[,3], # vals to fill raster with
+                    fun=mean) # aggregate function
+
+plot(ras.out)
+```
+
+## project raster
+```{r}
+polar.ras.out<-projectRaster(ras.out, crs="+init=epsg:3995")
+plot(polar.ras.out)
+```
+
+
+#close netcdf
+```{r}
+nc_close(nc.data)
+```
+
+
+
+
+# Write rasters
+
+```{r}
+
+#crs(nc.st) <- "+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0" 
+
+setwd("U:/Mareano/OCEANOGRAPHY/RobinsonFilesAsRaster/")
+# if writing from stack
+#writeRaster(nc.st, filename=names(nc.st), bylayer=TRUE,format="GTiff", overwrite=T)
+
+writeRaster(polar.ras.out, filename="Robinson_T_01_2013", format="GTiff", overwrite=T)
+```
+
