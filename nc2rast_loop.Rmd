@@ -29,3 +29,45 @@ vname <- "thetao" # Temp = thetatao, Salt=so, U=, V=
 outpath <-filename("U:/Mareano/OCEANOGRAPHY/RobinsonFilesAsRaster/")
 ```
 
+
+# LOOP
+```{r}
+n<- length(file.ls)
+
+for (i in 1:n){
+# open file, find lat long dimensions
+  filename <- "F:/Data/Oceanography/Robinsons Model/bottom_1_NEST_1m_20130101_20131231_grid_T.nc"
+  nc.data <- nc_open(filename)
+  #nc.data # gives the metadata - use to find variable names
+  lon <- ncvar_get(nc.data, "nav_lon", verbose = F)
+  lat <- ncvar_get(nc.data, "nav_lat", verbose = F)
+  t <- ncvar_get(nc.data, "time_counter", verbose = F)
+  lon[lon == -1] <- NA
+  lat[lat == -1] <- NA
+#load variable data
+  var.nc <- ncvar_get(nc.data, vname, start=c(1,1,1), count=c(995,845,1))
+#convert to dataframe
+  var.df<-data.frame(long=as.vector(lon),lat=as.vector(lat), var=as.vector(var.nc))
+  var.df<-na.omit(var.df)
+#convert to raster
+  ras.obj<-raster(xmn=min(var.df$lon),
+                xmx=max(var.df$lon),
+                ymn=min(var.df$lat),
+                ymx=max(var.df$lat),
+                ncols=995,
+                nrows=845)
+  ras.out<- rasterize(x=var.df[,1:2], # lon-lat data/spatial points object
+                    y=ras.obj, # raster object
+                    field=var.df[,3], # vals to fill raster with
+                    fun=mean) # aggregate function
+#project raster
+  polar.ras.out<-projectRaster(ras.out, crs="+init=epsg:3995")
+  plot(polar.ras.out)
+#close netcdf file
+  nc_close(nc.data)
+#write raster
+  writeRaster(polar.ras.out, filename="Robinson_T_01_2013", format="GTiff", overwrite=T)
+}
+
+```
+
