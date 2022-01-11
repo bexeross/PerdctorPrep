@@ -1,0 +1,27 @@
+---
+title: "Oceanography - netcdf2raster LOOP - R Notebook"
+output: html_notebook
+---
+
+If you need to batch convert netcdf 2 raster, this is the script for you. Here customised to work with Robinson's model outputs
+
+#libraries
+
+```{r}
+library(raster)
+library(ncdf4)
+library(rasterize)
+library(rgdal)
+```
+# set up loop
+
+```{r}
+file.ls <- list.files(path = "F:/Data/Oceanography/Robinsons Model/",
+                      pattern = "_T", #Temp =_T, Salt=_T, U=_U, V=_V
+                      full.names = T)
+
+# variable name
+vname <- "thetao" # Temp = thetatao, Salt=so, U=, V=
+
+```
+
