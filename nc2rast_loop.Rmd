@@ -13,9 +13,11 @@ library(ncdf4)
 library(rasterize)
 library(rgdal)
 ```
-# set up loop
+
+# customise
 
 ```{r}
+#where are the files, can use pattern to select some with common name element
 file.ls <- list.files(path = "F:/Data/Oceanography/Robinsons Model/",
                       pattern = "_T", #Temp =_T, Salt=_T, U=_U, V=_V
                       full.names = T)
@@ -23,5 +25,7 @@ file.ls <- list.files(path = "F:/Data/Oceanography/Robinsons Model/",
 # variable name
 vname <- "thetao" # Temp = thetatao, Salt=so, U=, V=
 
+#saving directory
+outpath <-filename("U:/Mareano/OCEANOGRAPHY/RobinsonFilesAsRaster/")
 ```
 
