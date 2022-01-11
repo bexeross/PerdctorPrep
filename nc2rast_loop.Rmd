@@ -29,11 +29,17 @@ vname <- "thetao" # Temp = thetatao, Salt=so, U=, V=
 outpath <-filename("U:/Mareano/OCEANOGRAPHY/RobinsonFilesAsRaster/")
 ```
 
+# pre loop vars
+```{r}
+n<- length(file.ls)
+t_per_file<-12
+
+```
+
+
 
 # LOOP
 ```{r}
-n<- length(file.ls)
-
 for (i in 1:n){
 # open file, find lat long dimensions
   filename <- "F:/Data/Oceanography/Robinsons Model/bottom_1_NEST_1m_20130101_20131231_grid_T.nc"
@@ -44,8 +50,10 @@ for (i in 1:n){
   t <- ncvar_get(nc.data, "time_counter", verbose = F)
   lon[lon == -1] <- NA
   lat[lat == -1] <- NA
+  
+  for (j in 1:t_per_file){
 #load variable data
-  var.nc <- ncvar_get(nc.data, vname, start=c(1,1,1), count=c(995,845,1))
+  var.nc <- ncvar_get(nc.data, vname, start=c(1,1,j), count=c(995,845,j))
 #convert to dataframe
   var.df<-data.frame(long=as.vector(lon),lat=as.vector(lat), var=as.vector(var.nc))
   var.df<-na.omit(var.df)
@@ -67,7 +75,7 @@ for (i in 1:n){
   nc_close(nc.data)
 #write raster
   writeRaster(polar.ras.out, filename="Robinson_T_01_2013", format="GTiff", overwrite=T)
-}
+}}
 
 ```
 
