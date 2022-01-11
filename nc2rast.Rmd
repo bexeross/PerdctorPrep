@@ -11,8 +11,11 @@ library(ncdf4)
 library(rasterize)
 library(rgdal)
 ```
+
+
 # get netcdf dimensions
 ```{r}
+#the data file
 filename <- "F:/Data/Oceanography/Robinsons Model/bottom_1_NEST_1m_20130101_20131231_grid_T.nc"
 nc.data <- nc_open(filename)
 nc.data # gives the metadata - use to find variable names
@@ -32,8 +35,8 @@ lat[lat == -1] <- NA
 # Load netcdf variable data
 
 ```{r}
-
-vname <- "thetao"
+# variable name
+vname <- "thetao" # Temp = thetatao, Salt=so, U=, V=
 
 ## This code gives only a stack of images with dimension 0 to x/y so doesn't have lat/lon/crs associated. This is fine if lat/lon is simple enough (rectangular) to be used to define the bounding box (needs extra line of code to add this), but if it is not simple (e.g. robinsons data has a complex grid of differing resolution) then use the method that is not commented out.
 # nc.st <- stack(filename, varname = vname)
