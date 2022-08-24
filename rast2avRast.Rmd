@@ -1,0 +1,141 @@
+---
+title: "Averaging rasters from netcdf - R Notebook"
+output: html_notebook
+---
+
+
+This is designed to work with the rasters made by nc2rast, but can be adapted for other averaging between raster needs.
+
+#libraries
+```{r}
+library(raster)
+```
+
+
+#inputs
+
+```{r}
+path <- "U:/Mareano/OCEANOGRAPHY/RobinsonFilesAsRaster/"
+
+U_stk <- stack(paste0(path,"Robinson_U_2013.tif"),
+            paste0(path,"Robinson_U_2014.tif"),
+            paste0(path,"Robinson_U_2015.tif"),
+            paste0(path,"Robinson_U_2016.tif"))
+
+V_stk <- stack(paste0(path,"Robinson_V_2013.tif"),
+            paste0(path,"Robinson_V_2014.tif"),
+            paste0(path,"Robinson_V_2015.tif"),
+            paste0(path,"Robinson_V_2016.tif"))
+
+T_stk <- stack(paste0(path,"Robinson_T_2013.tif"),
+            paste0(path,"Robinson_T_2014.tif"),
+            paste0(path,"Robinson_T_2015.tif"),
+            paste0(path,"Robinson_T_2016.tif"))
+
+S_stk <- stack(paste0(path,"Robinson_S_2013.tif"),
+            paste0(path,"Robinson_S_2014.tif"),
+            paste0(path,"Robinson_S_2015.tif"),
+            paste0(path,"Robinson_S_2016.tif"))
+
+MLD_stk <- stack(paste0(path,"Robinson_MLD_2013.tif"),
+            paste0(path,"Robinson_MLD_2014.tif"),
+            paste0(path,"Robinson_MLD_2015.tif"),
+            paste0(path,"Robinson_MLD_2016.tif"))
+```
+
+
+
+# UV to speed
+```{r}
+#Dimension matching (2 more cols in V)
+extent(V_stk)
+extent(U_stk)
+new_ext<-extent(c(-3412861,2873275,-3412308,660658))
+V_stk_Crp<-crop(V_stk, new_ext)
+U_stk_Crp<-crop(U_stk, new_ext)
+extent(V_stk_Crp)
+extent(U_stk_Crp)
+
+#Create two functions to calculate the current direction and current speed from u,v. 
+
+CurrDir <-function(u,v){
+  (atan2(u,v)*180/pi)%%360 
+}
+
+CurrSpd <-function(u,v){
+  sqrt(u^2+v^2)
+}
+
+
+#Compute wind direction and wind speed using the functions just created
+#The openair package needs to have wind direction stored as "wd" and wind speed
+#stored as "ws" to pick those columns and plot the wind rose
+CDir_stk <-CurrDir(U_stk_Crp,V_stk_Crp)
+Cspd_stk <-CurrSpd(U_stk_Crp,V_stk_Crp)
+```
+
+
+#average rasters
+```{r}
+V_mean<-calc(V_stk, fun=mean)
+V_min<-calc(V_stk, fun=min)
+V_max<-calc(V_stk, fun=max)
+V_sd<-calc(V_stk, fun=sd)
+
+U_mean<-calc(U_stk, fun=mean)
+U_min<-calc(U_stk, fun=min)
+U_max<-calc(U_stk, fun=max)
+U_sd<-calc(U_stk, fun=sd)
+
+T_mean<-calc(T_stk, fun=mean)
+T_min<-calc(T_stk, fun=min)
+T_max<-calc(T_stk, fun=max)
+T_sd<-calc(T_stk, fun=sd)
+
+S_mean<-calc(S_stk, fun=mean)
+S_min<-calc(S_stk, fun=min)
+S_max<-calc(S_stk, fun=max)
+S_sd<-calc(S_stk, fun=sd)
+
+MLD_mean<-calc(MLD_stk, fun=mean)
+MLD_min<-calc(MLD_stk, fun=min)
+MLD_max<-calc(MLD_stk, fun=max)
+MLD_sd<-calc(MLD_stk, fun=sd)
+```
+
+
+#output averaged rasters
+
+```{r}
+setwd("U:/Mareano/OCEANOGRAPHY/RobinsonFilesAsRaster/")
+
+writeRaster(x = V_mean, filename = "Vmean_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = U_mean, filename = "Umean_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = T_mean, filename = "Tmean_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = S_mean, filename = "Smean_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = MLD_mean, filename = "MLDmean_Robinson.tif", driver = "GeoTiff")
+
+writeRaster(x = V_min, filename = "Vmin_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = U_min, filename = "Umin_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = T_min, filename = "Tmin_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = S_min, filename = "Smin_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = MLD_min, filename = "MLDmin_Robinson.tif", driver = "GeoTiff")
+
+writeRaster(x = V_max, filename = "Vmax_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = U_max, filename = "Umax_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = T_max, filename = "Tmax_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = S_max, filename = "Smax_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = MLD_max, filename = "MLDmax_Robinson.tif", driver = "GeoTiff")
+
+writeRaster(x = V_sd, filename = "Vsd_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = U_sd, filename = "Usd_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = T_sd, filename = "Tsd_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = S_sd, filename = "Ssd_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = MLD_sd, filename = "MLDsd_Robinson.tif", driver = "GeoTiff")
+```
+
+
+
+
+
+
