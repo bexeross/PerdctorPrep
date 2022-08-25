@@ -52,9 +52,11 @@ extent(V_stk)
 extent(U_stk)
 new_ext<-extent(c(-3412861,2873275,-3412308,660658))
 V_stk_Crp<-crop(V_stk, new_ext)
-U_stk_Crp<-crop(U_stk, new_ext)
+U_stk_Crp<-crop(U_stk, V_stk_Crp)
+U_stk_Crp_algn <- projectRaster(U_stk, V_stk_Crp, method = "bilinear") 3
+
 extent(V_stk_Crp)
-extent(U_stk_Crp)
+extent(U_stk_Crp_algn)
 
 #Create two functions to calculate the current direction and current speed from u,v. 
 
@@ -70,8 +72,8 @@ CurrSpd <-function(u,v){
 #Compute wind direction and wind speed using the functions just created
 #The openair package needs to have wind direction stored as "wd" and wind speed
 #stored as "ws" to pick those columns and plot the wind rose
-CDir_stk <-CurrDir(U_stk_Crp,V_stk_Crp)
-Cspd_stk <-CurrSpd(U_stk_Crp,V_stk_Crp)
+CDir_stk <-CurrDir(U_stk_Crp_algn,V_stk_Crp)
+Cspd_stk <-CurrSpd(U_stk_Crp_algn,V_stk_Crp)
 ```
 
 
@@ -101,6 +103,16 @@ MLD_mean<-calc(MLD_stk, fun=mean)
 MLD_min<-calc(MLD_stk, fun=min)
 MLD_max<-calc(MLD_stk, fun=max)
 MLD_sd<-calc(MLD_stk, fun=sd)
+
+CDir_mean<-calc(CDir_stk, fun=mean)
+CDir_min<-calc(CDir_stk, fun=min)
+CDir_max<-calc(CDir_stk, fun=max)
+CDir_sd<-calc(CDir_stk, fun=sd)
+
+CSpd_mean<-calc(Cspd_stk, fun=mean)
+CSpd_min<-calc(Cspd_stk, fun=min)
+CSpd_max<-calc(Cspd_stk, fun=max)
+CSpd_sd<-calc(Cspd_stk, fun=sd)
 ```
 
 
@@ -114,24 +126,35 @@ writeRaster(x = U_mean, filename = "Umean_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = T_mean, filename = "Tmean_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = S_mean, filename = "Smean_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = MLD_mean, filename = "MLDmean_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CDir_mean, filename = "CDirmean_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CSpd_mean, filename = "CSpdmean_Robinson.tif", driver = "GeoTiff")
 
 writeRaster(x = V_min, filename = "Vmin_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = U_min, filename = "Umin_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = T_min, filename = "Tmin_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = S_min, filename = "Smin_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = MLD_min, filename = "MLDmin_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CDir_min, filename = "CDirmin_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CSpd_min, filename = "CSpdmin_Robinson.tif", driver = "GeoTiff")
 
 writeRaster(x = V_max, filename = "Vmax_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = U_max, filename = "Umax_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = T_max, filename = "Tmax_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = S_max, filename = "Smax_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = MLD_max, filename = "MLDmax_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CDir_max, filename = "CDirmax_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CSpd_max, filename = "CSpdmax_Robinson.tif", driver = "GeoTiff")
 
 writeRaster(x = V_sd, filename = "Vsd_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = U_sd, filename = "Usd_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = T_sd, filename = "Tsd_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = S_sd, filename = "Ssd_Robinson.tif", driver = "GeoTiff")
 writeRaster(x = MLD_sd, filename = "MLDsd_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CDir_sd, filename = "CDirsd_Robinson.tif", driver = "GeoTiff")
+writeRaster(x = CSpd_sd, filename = "CSpdsd_Robinson.tif", driver = "GeoTiff")
+
+
+
 ```
 
 
