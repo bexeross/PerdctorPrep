@@ -1,0 +1,145 @@
+---
+title: "Oceanography - netcdf2raster - R Notebook"
+output: html_notebook 
+---
+
+Data obtained in netcdf format needs to be converted to raster for our workflows. Currently this script is customised to work with Robinson's oceanography data, but will be customisable for other data.
+
+```{r}
+library(raster)
+library(ncdf4)
+library(rasterize)
+library(rgdal) #being deprecated in oct2023
+
+# Please note that rgdal will be retired during October 2023,
+# plan transition to sf/stars/terra functions using GDAL and PROJ
+# at your earliest convenience.
+# See https://r-spatial.org/r/2023/05/15/evolution4.html and https://github.com/r-spatial/evolution
+```
+
+
+# get netcdf dimensions
+```{r}
+#the data file
+filename <- "U:/Mareano/OCEANOGRAPHY/JonAlbretsenData/2023NK800v3/norkyst_800m_his_bott_10perc.nc"
+nc.data <- nc_open(filename)
+nc.data # gives the metadata - use to find variable names
+
+lon <- ncvar_get(nc.data, "lon_rho", verbose = F) #lon_rho for temp/salt and lon_u/lon_v  for u/v respectively (i.e. grids are different)
+lat <- ncvar_get(nc.data, "lat_rho", verbose = F) #lat_rho for temp/salt and lat_u/lat_v  for u/v respectively (i.e. grids are different)
+t <- ncvar_get(nc.data, "ocean_time", verbose = F)
+
+lon[lon == -32767] <- NA
+lat[lat == -32767] <- NA
+
+```
+
+
+
+
+# Load netcdf variable data
+
+```{r}
+# variable name
+vname <- "temp" 
+
+#In NK800v3 (JonAlbretsen's model)
+
+# salt= salinity, temp = temperature (with lat_rho, lon_rho)
+# u = u component (with lat_u, lon_u)
+# v = v component (with lat_v, lon_v)
+
+# NB dimensions of salt/temp are:
+# xi_rho (max 2747),eta_rho (max 1148),s_rho (max 1),ocean_time (max 1)
+
+var.nc <- ncvar_get(nc.data, vname, start=c(1,1,1,1), count=c(2747,1148,1,1)) 
+
+#NB could have used same code as lat/lon but this is method for selecting an subset, good to have a copy of that somewhere in this script!
+```
+
+# convert to data.frame and spatial points
+
+```{r}
+var.df<-data.frame(long=as.vector(lon),lat=as.vector(lat), var=as.vector(var.nc))
+var.df<-na.omit(var.df)
+# try giving it a projection so that the projection can be changed
+# sp.var<-SpatialPointsDataFrame(coords=c(var.df[,c("long","lat")]),
+#                                proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"),
+#                                data = var.df)
+# #transform to polar stereographic projection (seems like right track but gives blank raster at the moment...)
+# sp.var.polar<-spTransform(sp.var, CRS("+init=epsg:3995"))
+# plot(sp.var.polar)
+```
+
+# convert to raster
+```{r}
+ras.obj<-raster(xmn=min(var.df$lon),
+                xmx=max(var.df$lon),
+                ymn=min(var.df$lat),
+                ymx=max(var.df$lat),
+                ncols=2747,
+                nrows=1148)
+
+# ras.obj<-raster(xmn=min(sp.var.polar@coords[,1]),
+#                 xmx=max(sp.var.polar@coords[,1]),
+#                 ymn=min(sp.var.polar@coords[,2]),
+#                 ymx=max(sp.var.polar@coords[,2]),
+#                 ncols=995,
+#                 nrows=845)
+              
+                #resolution=0.0333)
+
+#ext.polar<-extent(sp.var.polar)
+
+
+# ras.out<- rasterize(x=ext.polar, # lon-lat data/spatial points object
+#                     y=ras.obj, # raster object
+#                     field=sp.var.polar$var, # vals to fill raster with
+#                     fun=mean) # aggregate function
+
+ras.out<- rasterize(x=var.df[,1:2], # lon-lat data/spatial points object
+                    y=ras.obj, # raster object
+                    field=var.df[,3], # vals to fill raster with
+                    fun=mean) # aggregate function
+
+plot(ras.out)
+```
+
+## project raster
+```{r}
+polar.ras.out<-projectRaster(ras.out, crs="+init=epsg:3995")
+# i.e. https://epsg.io/3995 WGS 84/ Arctic Polar Stereographic
+plot(polar.ras.out)
+```
+
+```{r}
+polar.ras.out
+```
+
+
+
+
+
+#close netcdf
+```{r}
+nc_close(nc.data)
+```
+
+
+
+
+# Write rasters
+
+```{r}
+
+#crs(nc.st) <- "+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0" 
+
+setwd("U:/Mareano/OCEANOGRAPHY/JonAlbretsenData/2023NK800v3/")
+# if writing from stack
+#writeRaster(nc.st, filename=names(nc.st), bylayer=TRUE,format="GTiff", overwrite=T)
+
+writeRaster(polar.ras.out, filename="NK800v3_temp_10pc", format="GTiff", overwrite=T)
+
+rm()
+```
+
